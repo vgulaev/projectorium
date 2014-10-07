@@ -1,18 +1,19 @@
 # -*- coding: utf-8 -*-
-#import sublime, sublime_plugin
+import sublime, sublime_plugin
 
 import os
 import platform
 import codecs
 
-def gether_text():
+def gether_text( path ):
 	if (platform.system() == "Windows"):
 		dirsym = "\\"
 	else:
 		dirsym = "/"
 
 	#path = __file__.split(dirsym)
-	rootdir = "C:\\Users\\Valentin\\workspace\\projectorium"
+	rootdir = path
+	#rootdir = "C:\\Users\\Valentin\\workspace\\projectorium"
 	stat = {".css" : {}, ".js" : {}, ".py" : {}, ".html" : {}}
 	alllines = []
 	for root, subFolders, files in os.walk(rootdir):
@@ -38,26 +39,28 @@ def clear_lines( one ):
 		else:
 			break
 	while True:
-		if one[0][0] == "#":
+		if one[0][0]  == "#":
 			one.pop(0)
 		else:
 			break
-	simbol_for_wipe = "{}[].,+=():\\\"'!<>-/^"
+	simbol_for_wipe = "{}[].,+=():\\\"'!<>-/^?*|#:;`"
 	for (i, e) in enumerate(one):
 		for s in simbol_for_wipe:
 			one[i] = one[i].lower().replace(s, " ")
 
 def bild_vocabulary( one ):
-	 sysv = set(["true", "false", "else", "self", "import", "class"])
+	 sysv = set(["true", "false", "else", "self", "import", "class", "while", "pass"])
 	 voc = set()
 	 for e in one:
 	 	tv = e.split( " " )
 	 	voc |= set(tv)
 	 voc ^= sysv
 	 l = []
+	 ns = set( ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "0"] )
 	 for e in voc:
-	 	if len(e) > 3:
-	 		l += [e]
+	 	if ( len(e) > 3 ):
+	 		if not(e[0] in ns):
+	 			l += [e]
 	 return l
 
 def make_files( voc ):
@@ -76,18 +79,28 @@ def make_files( voc ):
 		f = codecs.open(r + "pj-" + e + ".sublime-snippet", "w", encoding="utf-8" )
 		f.write( fc )
 
-#class makesnipCommand(sublime_plugin.TextCommand):
+def  delete_old_snipets():
+	path = "c:\\Users\\Valentin\\AppData\\Roaming\\Sublime Text 3\\Packages\\User\\"
+	for root, dirs, files in os.walk(path):
+		for currentFile in files:
+			#print "processing file: " + currentFile
+			exts=('.sublime-snippet')
+			if any(currentFile.lower().endswith(ext) for ext in exts):
+				os.remove(os.path.join(root, currentFile))
 
 project_root = "" 
-class makesnipCommand():
+
+class makesnipCommand(sublime_plugin.TextCommand):
 	def run(self, edit):
-		print "Hello!!!"
-		#self.view.insert(edit, 0, "Hello, Worlddfdff!")
+		#self.view.insert( edit, 0, str( self.view.window().folders()[0] ) )
+		alllines = gether_text( self.view.window().folders()[0] )
+		clear_lines( alllines )
+		voc = bild_vocabulary( alllines )
+		delete_old_snipets()
+		make_files( voc )
+		#print voc
+		#print len( voc )
 
-alllines = gether_text()
-clear_lines( alllines )
-voc = bild_vocabulary( alllines )
-make_files( voc )
-
-print voc
-print len( voc )
+if __name__ == '__main__':
+	cmd = makesnipCommand()
+	cmd.run(None)
